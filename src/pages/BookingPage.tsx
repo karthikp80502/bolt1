@@ -117,10 +117,47 @@ function BookingPage() {
   ];
 
   useEffect(() => {
-    // Load therapists from localStorage (approved therapists who have listed services)
-    const storedTherapists = JSON.parse(localStorage.getItem('mindcare_therapists') || '[]');
-    if (storedTherapists.length > 0) {
-      setAvailableTherapists(storedTherapists);
+    // Load approved therapist services
+    const therapistServices = JSON.parse(localStorage.getItem('mindcare_therapist_services') || '[]');
+    const approvedServices = therapistServices.filter((service: any) => service.status === 'approved');
+    
+    // Convert services to therapist format for booking
+    const availableTherapistsFromServices = approvedServices.map((service: any) => ({
+      id: service.therapistId,
+      name: service.therapistName,
+      title: service.qualification,
+      specialization: service.specialization,
+      experience: parseInt(service.experience.split(' ')[0]) || 0,
+      rating: 4.8, // Default rating for new therapists
+      reviewCount: 0,
+      hourlyRate: service.chargesPerSession,
+      location: 'Online',
+      avatar: service.profilePicture || 'https://images.pexels.com/photos/5327580/pexels-photo-5327580.jpeg?auto=compress&cs=tinysrgb&w=150',
+      verified: true,
+      nextAvailable: 'Today, 2:00 PM',
+      bio: service.bio,
+      languages: service.languages
+    }));
+
+    // Load existing therapists from localStorage and merge with services
+    const existingTherapists = JSON.parse(localStorage.getItem('mindcare_therapists') || '[]');
+    
+    // Combine and deduplicate
+    const allTherapists = [...existingTherapists];
+    availableTherapistsFromServices.forEach((serviceTherapist: any) => {
+      const existingIndex = allTherapists.findIndex((t: any) => t.id === serviceTherapist.id);
+      if (existingIndex >= 0) {
+        // Update existing therapist with service data
+        allTherapists[existingIndex] = serviceTherapist;
+      } else {
+        // Add new therapist
+        allTherapists.push(serviceTherapist);
+      }
+    });
+
+    if (allTherapists.length > 0) {
+      setAvailableTherapists(allTherapists);
+      localStorage.setItem('mindcare_therapists', JSON.stringify(allTherapists));
     } else {
       // Initialize with default therapists if none exist
       localStorage.setItem('mindcare_therapists', JSON.stringify(defaultTherapists));

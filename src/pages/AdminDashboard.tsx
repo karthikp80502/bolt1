@@ -13,6 +13,7 @@ function AdminDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [pendingTherapists, setPendingTherapists] = useState<any[]>([]);
+  const [pendingServices, setPendingServices] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -48,16 +49,17 @@ function AdminDashboard() {
   ];
 
   useEffect(() => {
-    // Load pending therapists from localStorage
-    const loadPendingTherapists = () => {
-      const pending = JSON.parse(localStorage.getItem('mindcare_pending_therapists') || '[]');
-      setPendingTherapists(pending);
+    // Load pending services from localStorage
+    const loadPendingServices = () => {
+      const services = JSON.parse(localStorage.getItem('mindcare_therapist_services') || '[]');
+      const pending = services.filter((service: any) => service.status === 'pending');
+      setPendingServices(pending);
     };
     
-    loadPendingTherapists();
+    loadPendingServices();
     
-    // Set up interval to refresh pending therapists
-    const interval = setInterval(loadPendingTherapists, 5000);
+    // Set up interval to refresh pending services
+    const interval = setInterval(loadPendingServices, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -101,45 +103,53 @@ function AdminDashboard() {
   ];
 
   const handleApproveTherapist = (id: string) => {
-    const pendingTherapists = JSON.parse(localStorage.getItem('mindcare_pending_therapists') || '[]');
-    const approvedTherapists = JSON.parse(localStorage.getItem('mindcare_approved_therapists') || '[]');
+    const services = JSON.parse(localStorage.getItem('mindcare_therapist_services') || '[]');
+    const availableTherapists = JSON.parse(localStorage.getItem('mindcare_therapists') || '[]');
     
-    const therapistToApprove = pendingTherapists.find((t: any) => t.id === id);
-    if (therapistToApprove) {
-      // Move to approved list
-      const approvedTherapist = { ...therapistToApprove, status: 'approved', approved: true, approvedAt: new Date().toISOString() };
-      approvedTherapists.push(approvedTherapist);
+    const serviceToApprove = services.find((s: any) => s.id === id);
+    if (serviceToApprove) {
+      // Update service status
+      const updatedServices = services.map((s: any) => 
+        s.id === id ? { ...s, status: 'approved', approvedAt: new Date().toISOString() } : s
+      );
+      localStorage.setItem('mindcare_therapist_services', JSON.stringify(updatedServices));
       
-      // Remove from pending list
-      const updatedPending = pendingTherapists.filter((t: any) => t.id !== id);
+      // Add to available therapists for booking
+      const therapistForBooking = {
+        id: serviceToApprove.therapistId,
+        name: serviceToApprove.therapistName,
+        title: serviceToApprove.qualification,
+        specialization: serviceToApprove.specialization,
+        experience: parseInt(serviceToApprove.experience.split(' ')[0]) || 0,
+        rating: 4.8,
+        reviewCount: 0,
+        hourlyRate: serviceToApprove.chargesPerSession,
+        location: 'Online',
+        avatar: serviceToApprove.profilePicture || 'https://images.pexels.com/photos/5327580/pexels-photo-5327580.jpeg?auto=compress&cs=tinysrgb&w=150',
+        verified: true,
+        nextAvailable: 'Today, 2:00 PM',
+        bio: serviceToApprove.bio,
+        languages: serviceToApprove.languages
+      };
       
-      localStorage.setItem('mindcare_approved_therapists', JSON.stringify(approvedTherapists));
-      localStorage.setItem('mindcare_pending_therapists', JSON.stringify(updatedPending));
+      const updatedAvailableTherapists = availableTherapists.filter((t: any) => t.id !== serviceToApprove.therapistId);
+      updatedAvailableTherapists.push(therapistForBooking);
+      localStorage.setItem('mindcare_therapists', JSON.stringify(updatedAvailableTherapists));
       
-      setPendingTherapists(updatedPending);
+      setPendingServices(prev => prev.filter(s => s.id !== id));
       
-      // Update current user if they are the approved therapist
-      const currentUser = JSON.parse(localStorage.getItem('mindcare_user') || '{}');
-      if (currentUser.email === therapistToApprove.email) {
-        const updatedUser = { ...currentUser, status: 'approved', verified: true };
-        localStorage.setItem('mindcare_user', JSON.stringify(updatedUser));
-        // Trigger a storage event to update the user context
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'mindcare_user',
-          newValue: JSON.stringify(updatedUser)
-        }));
-      }
-      
-      toast.success(`${therapistToApprove.name} has been approved!`);
+      toast.success(`${serviceToApprove.therapistName}'s service has been approved!`);
     }
   };
 
   const handleRejectTherapist = (id: string) => {
-    const pendingTherapists = JSON.parse(localStorage.getItem('mindcare_pending_therapists') || '[]');
-    const updatedPending = pendingTherapists.filter((t: any) => t.id !== id);
-    localStorage.setItem('mindcare_pending_therapists', JSON.stringify(updatedPending));
-    setPendingTherapists(updatedPending);
-    toast.success('Therapist application rejected.');
+    const services = JSON.parse(localStorage.getItem('mindcare_therapist_services') || '[]');
+    const updatedServices = services.map((s: any) => 
+      s.id === id ? { ...s, status: 'rejected' } : s
+    );
+    localStorage.setItem('mindcare_therapist_services', JSON.stringify(updatedServices));
+    setPendingServices(prev => prev.filter(s => s.id !== id));
+    toast.success('Therapist service rejected.');
   };
 
   return (
@@ -235,7 +245,7 @@ function AdminDashboard() {
         {/* Content based on selected tab */}
         {selectedTab === 'overview' && (
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Pending Therapist Approvals */}
+            {/* Pending Service Approvals */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -248,16 +258,16 @@ function AdminDashboard() {
                 <h3 className={`text-xl font-semibold ${
                   theme === 'dark' ? 'text-white' : 'text-gray-800'
                 }`}>
-                  Pending Therapist Approvals
+                  Pending Service Approvals
                 </h3>
                 <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {pendingTherapists.length} pending
+                  {pendingServices.length} pending
                 </span>
               </div>
               <div className="space-y-4">
-                {pendingTherapists.map((therapist) => (
+                {pendingServices.map((service) => (
                   <div
-                    key={therapist.id}
+                    key={service.id}
                     className={`p-4 rounded-xl border ${
                       theme === 'dark' 
                         ? 'border-gray-700 bg-gray-700/50' 
@@ -269,35 +279,49 @@ function AdminDashboard() {
                         <h4 className={`font-semibold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-800'
                         }`}>
-                          {therapist.name}
+                          Dr. {service.therapistName}
                         </h4>
                         <p className={`text-sm ${
                           theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          {therapist.specialization} • {therapist.experience} years
+                          {service.qualification} • {service.experience}
                         </p>
                         <p className={`text-sm ${
                           theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          {therapist.email}
+                          ${service.chargesPerSession}/session
                         </p>
                       </div>
                       <span className={`text-xs ${
                         theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                       }`}>
-                        {new Date(therapist.submittedAt).toLocaleDateString()}
+                        {new Date(service.submittedAt).toLocaleDateString()}
                       </span>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-1">
+                        {service.specialization.slice(0, 3).map((spec: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              theme === 'dark' ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700'
+                            }`}
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleApproveTherapist(therapist.id)}
+                        onClick={() => handleApproveTherapist(service.id)}
                         className="flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
                       >
                         <CheckCircle className="w-3 h-3" />
                         <span>Approve</span>
                       </button>
                       <button
-                        onClick={() => handleRejectTherapist(therapist.id)}
+                        onClick={() => handleRejectTherapist(service.id)}
                         className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
                       >
                         <XCircle className="w-3 h-3" />

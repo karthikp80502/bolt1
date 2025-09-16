@@ -66,25 +66,6 @@ function RegisterPage() {
     });
     
     if (success) {
-      if (formData.role === 'therapist') {
-        // Add to pending therapists list for admin approval
-        const pendingTherapists = JSON.parse(localStorage.getItem('mindcare_pending_therapists') || '[]');
-        const therapistData = {
-          id: Date.now().toString(),
-          name: formData.name,
-          email: formData.email,
-          specialization: formData.specialization,
-          experience: formData.experience,
-          location: 'Not specified', // Will be updated when therapist lists services
-          hourlyRate: parseInt(formData.hourlyRate),
-          licenseNumber: formData.licenseNumber,
-          submittedAt: new Date().toISOString(),
-          status: 'pending',
-          approved: false
-        };
-        localStorage.setItem('mindcare_pending_therapists', JSON.stringify([...pendingTherapists, therapistData]));
-        toast.success('Registration submitted! Please wait for admin approval.');
-      }
       navigate('/dashboard');
     }
     
@@ -351,72 +332,6 @@ function RegisterPage() {
 
             {formData.role === 'therapist' && (
               <>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Briefcase className={`h-5 w-5 ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-400'
-                    }`} />
-                  </div>
-                  <input
-                    id="specialization"
-                    name="specialization"
-                    type="text"
-                    required
-                    value={formData.specialization}
-                    onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-12 py-3 border rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                      theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    placeholder="Specialization (e.g., CBT, PTSD)"
-                  />
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Clock className={`h-5 w-5 ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-400'
-                    }`} />
-                  </div>
-                  <input
-                    id="experience"
-                    name="experience"
-                    type="text"
-                    required
-                    value={formData.experience}
-                    onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-12 py-3 border rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                      theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    placeholder="Years of experience"
-                  />
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <DollarSign className={`h-5 w-5 ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-400'
-                    }`} />
-                  </div>
-                  <input
-                    id="hourlyRate"
-                    name="hourlyRate"
-                    type="number"
-                    required
-                    value={formData.hourlyRate}
-                    onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-12 py-3 border rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
-                      theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    placeholder="Hourly rate ($)"
-                  />
-                </div>
-
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FileText className={`h-5 w-5 ${

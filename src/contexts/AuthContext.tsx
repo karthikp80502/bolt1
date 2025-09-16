@@ -112,23 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const foundUser = users.find(u => u.email === email && (!role || u.role === role));
       
       if (foundUser && password === 'password') {
-        // For therapists, check approval status
-        if (foundUser.role === 'therapist') {
-          const approvedTherapists = JSON.parse(localStorage.getItem('mindcare_approved_therapists') || '[]');
-          const approved = approvedTherapists.find((t: any) => t.email === foundUser.email && t.approved === true);
-          if (approved) {
-            const updatedUser = { ...foundUser, status: 'approved', verified: true };
-            setUser(updatedUser);
-            localStorage.setItem('mindcare_user', JSON.stringify(updatedUser));
-          } else {
-            const updatedUser = { ...foundUser, status: 'pending', verified: false };
-            setUser(updatedUser);
-            localStorage.setItem('mindcare_user', JSON.stringify(updatedUser));
-          }
-        } else {
-          setUser(foundUser);
-          localStorage.setItem('mindcare_user', JSON.stringify(foundUser));
-        }
+        setUser(foundUser);
+        localStorage.setItem('mindcare_user', JSON.stringify(foundUser));
         toast.success('Login successful!');
         return true;
       } else {
@@ -159,24 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(userData.licenseNumber && { licenseNumber: userData.licenseNumber }),
         verified: userData.role === 'patient'
       };
-
-      // For therapists, add to pending list for admin approval
-      if (userData.role === 'therapist') {
-        const pendingTherapists = JSON.parse(localStorage.getItem('mindcare_pending_therapists') || '[]');
-        const therapistData = {
-          id: newUser.id,
-          name: userData.name,
-          email: userData.email,
-          specialization: userData.specialization,
-          experience: userData.experience,
-          hourlyRate: userData.hourlyRate,
-          licenseNumber: userData.licenseNumber,
-          submittedAt: new Date().toISOString(),
-          status: 'pending',
-          approved: false
-        };
-        localStorage.setItem('mindcare_pending_therapists', JSON.stringify([...pendingTherapists, therapistData]));
-      }
 
       setUser(newUser);
       localStorage.setItem('mindcare_user', JSON.stringify(newUser));

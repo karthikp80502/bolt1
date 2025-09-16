@@ -28,6 +28,7 @@ function Sidebar() {
 
   const therapistMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Users, label: 'List Service', path: '/list-service' },
     { icon: Calendar, label: 'Appointments', path: '/appointments' },
     { icon: Users, label: 'Patients', path: '/patients' },
     { icon: MessageCircle, label: 'Messages', path: '/messages' },

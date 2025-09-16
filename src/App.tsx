@@ -25,6 +25,7 @@ import TherapistsManagementPage from './pages/TherapistsManagementPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SystemPage from './pages/SystemPage';
 import VideoSessionPage from './pages/VideoSessionPage';
+import ListServicePage from './pages/ListServicePage';
 
 // Admin Therapy Management
 import AdminTherapyManagement from './pages/AdminTherapyManagement';
@@ -147,6 +148,10 @@ function App() {
           } />
           
           {/* Therapist Routes */}
+          <Route path="/list-service" element={
+            user?.role === 'therapist' ? <ListServicePage /> : <Navigate to="/dashboard" />
+          } />
+          
           <Route path="/appointments" element={
             user?.role === 'therapist' ? <AppointmentsPage /> : <Navigate to="/dashboard" />
           } />
